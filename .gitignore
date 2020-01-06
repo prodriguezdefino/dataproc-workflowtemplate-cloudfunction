@@ -2,4 +2,5 @@ tf/.terraform
 tf/*.tfstate
 **/.DS_Store
 tf/files/*.zip
-tf/files/cf_trigger_dataproc_jobs.zip
+tf/terraform.tfstate*
+tf/terraform.tfvars
