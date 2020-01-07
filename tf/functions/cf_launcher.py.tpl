@@ -1,4 +1,6 @@
 import logging
+import base64
+import json
 from google.cloud import dataproc_v1
 
 # Copyright 2018 Google LLC. All rights reserved. To the extent this Software is provided by Google (“Google Software”),
@@ -15,27 +17,39 @@ def callback(operation_future):
     result = operation_future.result()
     print(result)
 
-def triggerDataprocJobs(event, context):
+def triggerDataprocJobs(message, context):
+    event = None
+    if not 'data' in message:
+      print("no data in the pubsub message")
+      return
+    event = json.loads(base64.b64decode(message['data']).decode('utf-8'))
+    print('received: ' + event)
     client = dataproc_v1.WorkflowTemplateServiceClient()
 
     project = '${project}'
     region = 'global'
     parent = client.region_path(project, region)
 
-    zone = 'us-central1-c'
-    clusterName = 'dataproc-workflow-test'
+    zone = event.get('zone', 'us-central1-c')
+    cluster_name = 'cluster-' + event.get('jobName', 'dataproc-workflow-test')
     labels = ${labels_instance}
     bucket = "${script_bucket}"
-    pysparkFileName = "sparktest.py"
-    mainPySparkFileGSLocation = "gs://{}/{}".format(bucket, pysparkFileName)
-    loggingLevel = getattr(logging, 'INFO')
+    cluster_init_actions = event.get('clusterInitActions', [])
+
+    if not isinstance(cluster_init_actions, list):
+        print("cluster initialization actions should be a list")
+        return
+
+    if not "jobs" in event.keys():
+        print("jobs property not present in the event, no work to be done...")
+        return
 
     template = {
         "name": "projects/{}/regions/{}/workflowTemplates/dummy-template-test".format(project, region),
         "version": 1,
         "placement": {
             "managed_cluster": {
-                'cluster_name': clusterName,
+                'cluster_name': cluster_name,
                 'config': {
                     'gce_cluster_config': {
                         'zone_uri': zone,
@@ -53,47 +67,12 @@ def triggerDataprocJobs(event, context):
                         'num_instances': 2,
                         'machine_type_uri': 'n1-standard-1'
                     },
-                    'initialization_actions' : []
+                    'initialization_actions' : cluster_init_actions
                 },
                 'labels': labels
             },
         },
-        "jobs": [{
-            "step_id": "step1",
-            "pyspark_job": {
-                "main_python_file_uri": mainPySparkFileGSLocation,
-                "args": [],
-                "python_file_uris": [],
-                "jar_file_uris": [],
-                "file_uris": [],
-                "archive_uris": [],
-                "properties": {},
-                "logging_config": {
-                    "driver_log_levels":{
-                        "root": loggingLevel
-                    }
-                }
-            },
-            "prerequisite_step_ids": []
-        },
-        {
-            "step_id": "step2",
-            "pyspark_job": {
-                "main_python_file_uri": mainPySparkFileGSLocation,
-                "args": [],
-                "python_file_uris": [],
-                "jar_file_uris": [],
-                "file_uris": [],
-                "archive_uris": [],
-                "properties": {},
-                "logging_config": {
-                    "driver_log_levels":{
-                        "root": loggingLevel
-                    }
-                }
-            },
-            "prerequisite_step_ids": ["step1"]
-        }]
+        "jobs": event["jobs"]
     }
 
     response = client.instantiate_inline_workflow_template(parent, template)
