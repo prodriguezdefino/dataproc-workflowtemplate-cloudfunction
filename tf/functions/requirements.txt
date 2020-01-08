@@ -11,4 +11,5 @@
 # package>=version
 
 google-cloud-dataproc
+google-cloud-storage
 google-api-python-client

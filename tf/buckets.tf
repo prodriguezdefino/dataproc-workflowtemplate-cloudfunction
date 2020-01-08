@@ -10,19 +10,35 @@
  */
 
 resource "google_storage_bucket" "functions_bucket" {
-  name = "${var.project}-cf-dataproc-workflow-functions"
+  name   = "${var.project}-cf-dataproc-workflow-functions"
+  labels = local.labels
 }
 
 resource "google_storage_bucket" "scripts_bucket" {
-  name = "${var.project}-cf-dataproc-workflow-scripts"
+  name   = "${var.project}-cf-dataproc-workflow-scripts"
+  labels = local.labels
+}
+
+resource "google_storage_bucket" "configs_bucket" {
+  name   = "${var.project}-cf-dataproc-workflow-configs"
+  labels = local.labels
 }
 
 data "template_file" "cf_template" {
   template = "${file("${path.module}/functions/cf_launcher.py.tpl")}"
   vars = {
-    project         = var.project
-    script_bucket   = google_storage_bucket.scripts_bucket.name
-    labels_instance = jsonencode(local.labels)
+    project       = var.project
+    script_bucket = google_storage_bucket.scripts_bucket.name
+    config_bucket = google_storage_bucket.configs_bucket.name
+    config_file   = "configurations.json"
+  }
+}
+
+data "template_file" "cf_configs" {
+  template = "${file("${path.module}/configs/configurations.json.tpl")}"
+  vars = {
+    labels = jsonencode(local.labels)
+    zone   = var.zone
   }
 }
 
@@ -51,4 +67,10 @@ resource "google_storage_bucket_object" "script_object" {
   name   = "sparktest.py"
   bucket = google_storage_bucket.scripts_bucket.name
   source = "${path.module}/scripts/sparktest.py"
+}
+
+resource "google_storage_bucket_object" "configs_object" {
+  name    = "configurations.json"
+  bucket  = google_storage_bucket.configs_bucket.name
+  content = data.template_file.cf_configs.rendered
 }

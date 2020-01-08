@@ -1,0 +1,25 @@
+{
+  "cluster_config": {
+    "cluster_name": "default_cluster_name",
+    "config": {
+        "gce_cluster_config": {
+            "zone_uri": "${zone}",
+            "service_account_scopes": [
+                "https://www.googleapis.com/auth/cloud.useraccounts.readonly",
+                "https://www.googleapis.com/auth/devstorage.full_control",
+                "https://www.googleapis.com/auth/logging.write"
+            ]
+        },
+        "master_config": {
+            "num_instances": 1,
+            "machine_type_uri": "n1-standard-1"
+        },
+        "worker_config": {
+            "num_instances": 2,
+            "machine_type_uri": "n1-standard-1"
+        },
+        "initialization_actions" : []
+    },
+    "labels": ${labels}
+  }
+}

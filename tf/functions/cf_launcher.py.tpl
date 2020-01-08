@@ -1,7 +1,9 @@
 import logging
 import base64
 import json
+from functools import partial
 from google.cloud import dataproc_v1
+from google.cloud import storage
 
 # Copyright 2018 Google LLC. All rights reserved. To the extent this Software is provided by Google (“Google Software”),
 # it is provided for demonstrative purposes only, and is supplied "AS IS" without any warranties or support commitment.
@@ -12,73 +14,69 @@ from google.cloud import dataproc_v1
 # with Google with respect to such software, your software usage rights, related restrictions and other terms are
 # governed by the terms of that agreement, and the foregoing does not supersede that agreement.
 
-def callback(operation_future):
-    # Handle result.
-    result = operation_future.result()
-    print(result)
+def retrieve_configuration(storage_client):
+  config_bucket = '${config_bucket}'
+  config_file = '${config_file}'
 
-def triggerDataprocJobs(message, context):
-    event = None
-    if not 'data' in message:
-      print("no data in the pubsub message, nothing to do...")
+  bucket = storage_client.get_bucket(config_bucket)
+  blob = bucket.get_blob(config_file)
+
+  return json.loads(blob.download_as_string())
+
+def execution_callback(template_name, cluster_name, metadata, operation_future):
+  # Handle result.
+  result = operation_future.result()
+  print("executed {}, on cluster {}, with metadata {}, result: ".format(template_name, cluster_name, metadata))
+  print(result if not None else 'ok')
+
+def trigger_dataproc_jobs(message, context):
+  event = None
+  if not 'data' in message:
+    print("no data in the pubsub message, nothing to do...")
+    return
+  event = json.loads(base64.b64decode(message['data']).decode('utf-8'))
+  print('event received: ')
+  print(event)
+  dataproc_client = dataproc_v1.WorkflowTemplateServiceClient()
+  storage_client = storage.Client()
+
+  config = retrieve_configuration(storage_client)
+
+  project = '${project}'
+  region = 'global'
+  parent = dataproc_client.region_path(project, region)
+
+  zone = event.get('zone', 'us-central1-c')
+  job_name = event.get('jobName', 'dataproc-workflow-test')
+  template_name = "projects/{}/regions/{}/workflowTemplates/{}".format(project, region, job_name)
+  cluster_name = 'cluster-' + job_name
+  config['cluster_config']['cluster_name'] = cluster_name
+
+  bucket = '${script_bucket}'
+  cluster_init_actions = event.get('clusterInitActions', [])
+
+  if not isinstance(cluster_init_actions, list):
+      print("cluster initialization actions should be a list")
       return
-    event = json.loads(base64.b64decode(message['data']).decode('utf-8'))
-    print('event received: ')
-    print(event)
-    client = dataproc_v1.WorkflowTemplateServiceClient()
 
-    project = '${project}'
-    region = 'global'
-    parent = client.region_path(project, region)
+  if not "jobs" in event.keys():
+      print("jobs property not present in the event, no work to be done...")
+      return
 
-    zone = event.get('zone', 'us-central1-c')
-    cluster_name = 'cluster-' + event.get('jobName', 'dataproc-workflow-test')
-    labels = ${labels_instance}
-    bucket = "${script_bucket}"
-    cluster_init_actions = event.get('clusterInitActions', [])
+  template = {
+      'name': template_name,
+      'version': 1,
+      'placement': {
+          'managed_cluster': config['cluster_config'],
+      },
+      'jobs': event['jobs']
+  }
 
-    if not isinstance(cluster_init_actions, list):
-        print("cluster initialization actions should be a list")
-        return
+  response = dataproc_client.instantiate_inline_workflow_template(parent, template)
 
-    if not "jobs" in event.keys():
-        print("jobs property not present in the event, no work to be done...")
-        return
+  # Handle metadata.
+  metadata = response.metadata
+  print('workflow instance created, metadata: ')
+  print(metadata)
 
-    template = {
-        "name": "projects/{}/regions/{}/workflowTemplates/dummy-template-test".format(project, region),
-        "version": 1,
-        "placement": {
-            "managed_cluster": {
-                'cluster_name': cluster_name,
-                'config': {
-                    'gce_cluster_config': {
-                        'zone_uri': zone,
-                        'service_account_scopes': [
-                            'https://www.googleapis.com/auth/cloud.useraccounts.readonly',
-                            'https://www.googleapis.com/auth/devstorage.full_control',
-                            'https://www.googleapis.com/auth/logging.write'
-                        ]
-                    },
-                    'master_config': {
-                        'num_instances': 1,
-                        'machine_type_uri': 'n1-standard-1'
-                    },
-                    'worker_config': {
-                        'num_instances': 2,
-                        'machine_type_uri': 'n1-standard-1'
-                    },
-                    'initialization_actions' : cluster_init_actions
-                },
-                'labels': labels
-            },
-        },
-        "jobs": event["jobs"]
-    }
-
-    response = client.instantiate_inline_workflow_template(parent, template)
-    response.add_done_callback(callback)
-
-    # Handle metadata.
-    metadata = response.metadata
-    print(metadata)
+  response.add_done_callback(partial(execution_callback, template_name=template_name, cluster_name=cluster_name, metadata=metadata))

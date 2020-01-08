@@ -8,17 +8,17 @@
  * with Google with respect to such software, your software usage rights, related restrictions and other terms are
  * governed by the terms of that agreement, and the foregoing does not supersede that agreement.
  */
- 
+
 resource "google_cloudfunctions_function" "function" {
-  name        = "trigger-dataproc-jobs"
+  name        = "dataproc-workflow-trigger"
   description = "Triggers the execution of a Dataproc workflow, creating a ephemeral cluster and executing a chain of tasks."
   runtime     = "python37"
-  entry_point = "triggerDataprocJobs"
+  entry_point = "trigger_dataproc_jobs"
 
   available_memory_mb   = 128
   source_archive_bucket = google_storage_bucket.functions_bucket.name
   source_archive_object = google_storage_bucket_object.function_object.name
-
+  labels                = local.labels
   service_account_email = google_service_account.sa_cf_executor.email
 
   event_trigger {
@@ -32,7 +32,8 @@ resource "google_cloudfunctions_function" "function" {
   depends_on = [
     google_project_service.dataproc_service,
     google_project_service.cfunctions_service,
-    google_storage_bucket_object.function_object
+    google_storage_bucket_object.function_object,
+    google_storage_bucket_object.configs_object
   ]
 }
 
