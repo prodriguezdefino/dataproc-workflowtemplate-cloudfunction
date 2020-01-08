@@ -25,7 +25,7 @@ resource "google_storage_bucket" "configs_bucket" {
 }
 
 data "template_file" "cf_template" {
-  template = "${file("${path.module}/functions/cf_launcher.py.tpl")}"
+  template = "${file("${path.module}/functions/cf_launcher.py")}"
   vars = {
     project       = var.project
     script_bucket = google_storage_bucket.scripts_bucket.name
@@ -35,7 +35,7 @@ data "template_file" "cf_template" {
 }
 
 data "template_file" "cf_configs" {
-  template = "${file("${path.module}/configs/configurations.json.tpl")}"
+  template = "${file("${path.module}/configs/configurations.json")}"
   vars = {
     labels = jsonencode(local.labels)
     zone   = var.zone

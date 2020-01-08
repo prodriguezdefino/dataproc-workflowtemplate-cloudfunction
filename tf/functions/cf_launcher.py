@@ -23,7 +23,7 @@ def retrieve_configuration(storage_client):
 
   return json.loads(blob.download_as_string())
 
-def execution_callback(template_name, cluster_name, metadata, operation_future):
+def execution_callback(operation_future, template_name, cluster_name, metadata):
   # Handle result.
   result = operation_future.result()
   print("executed {}, on cluster {}, with metadata {}, result: ".format(template_name, cluster_name, metadata))
