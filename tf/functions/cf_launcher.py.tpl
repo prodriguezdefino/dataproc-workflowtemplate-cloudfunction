@@ -20,10 +20,11 @@ def callback(operation_future):
 def triggerDataprocJobs(message, context):
     event = None
     if not 'data' in message:
-      print("no data in the pubsub message")
+      print("no data in the pubsub message, nothing to do...")
       return
     event = json.loads(base64.b64decode(message['data']).decode('utf-8'))
-    print('received: ' + event)
+    print('event received: ')
+    print(event)
     client = dataproc_v1.WorkflowTemplateServiceClient()
 
     project = '${project}'
