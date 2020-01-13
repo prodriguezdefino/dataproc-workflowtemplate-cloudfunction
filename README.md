@@ -8,7 +8,7 @@ The GCP building blocks are based on this services:
  * __Cloud Storage__                   - Stores the configuration of the cloud function, the scripts that are going to be executed as part of the workflow instances, holds all the execution logs and serves as the deployment facility for the Cloud Function code.
  * __Cloud IAM__                       - Creates and configure needed permissions for a Service Account in charge of running the Cloud Function
 
-Terraform is in charge of creating all the needed GCP resources, the scripts can be found under the [tf](tf) directory. The default configuration file and constants values existing in the Python code are interpolations done with the names of the created GCP resources (topics and storage buckets), also the test PySpark script used for this solution is being deployed on a hosted GCS location.
+Terraform is in charge of creating all the needed GCP resources, the scripts can be found under the [tf](tf) directory and they are based on version [0.12](https://www.terraform.io/upgrade-guides/0-12.html) of Terraform. The default configuration file and constants values existing in the Python code are interpolations done with the names of the created GCP resources (topics and storage buckets), also the test PySpark script used for this solution is being deployed on a hosted GCS location.
 
 ## Configuration File
 
