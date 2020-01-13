@@ -1,5 +1,5 @@
 {
-  "cluster_config": {
+  "default_cluster_config": {
     "cluster_name": "default_cluster_name",
     "config": {
         "config_bucket": "${gcs_staging_bucket}",
