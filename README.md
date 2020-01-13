@@ -3,10 +3,10 @@
 This repository holds the Terraform scripts and Cloud Function scripts needed to build a system that capture job execution requests and trigger those executions asynchronously as Dataproc jobs.
 
 The GCP building blocks are based on this services:
- * _PubSub topics and subscriptions_ - Creates the request and response channels, in use by the clients to send executions and to follow up on the results
- * _Cloud Functions_                 - Implements the logic that capture the requests, coming as Pubsub messages, extract the job's information and, based on preset configurations, creates a Dataproc Inline Worflow instance that will create the needed cluster, execute the job or list of jobs and takes care of the deletion of the used resources after completion (being that failed or successful).
- * _Cloud Storage_                   - Stores the configuration of the cloud function, the scripts that are going to be executed as part of the workflow instances, holds all the execution logs and serves as the deployment facility for the Cloud Function code.
- * _Cloud IAM_                       - Creates and configure needed permissions for a Service Account in charge of running the Cloud Function
+ * __PubSub topics and subscriptions__ - Creates the request and response channels, in use by the clients to send executions and to follow up on the results
+ * __Cloud Functions__                 - Implements the logic that capture the requests, coming as Pubsub messages, extract the job's information and, based on preset configurations, creates a Dataproc Inline Worflow instance that will create the needed cluster, execute the job or list of jobs and takes care of the deletion of the used resources after completion (being that failed or successful).
+ * __Cloud Storage__                   - Stores the configuration of the cloud function, the scripts that are going to be executed as part of the workflow instances, holds all the execution logs and serves as the deployment facility for the Cloud Function code.
+ * __Cloud IAM__                       - Creates and configure needed permissions for a Service Account in charge of running the Cloud Function
 
 Terraform is in charge of creating all the needed GCP resources, the scripts can be found under the [tf](tf) directory. The default configuration file and constants values existing in the Python code are interpolations done with the names of the created GCP resources (topics and storage buckets), also the test PySpark script used for this solution is being deployed on a hosted GCS location.
 
