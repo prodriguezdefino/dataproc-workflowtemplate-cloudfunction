@@ -12,4 +12,5 @@
 
 google-cloud-dataproc
 google-cloud-storage
+google-cloud-pubsub
 google-api-python-client

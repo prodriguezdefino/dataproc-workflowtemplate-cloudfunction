@@ -2,6 +2,7 @@
   "cluster_config": {
     "cluster_name": "default_cluster_name",
     "config": {
+        "config_bucket": "${gcs_staging_bucket}",
         "gce_cluster_config": {
             "zone_uri": "${zone}",
             "service_account_scopes": [

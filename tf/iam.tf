@@ -34,7 +34,8 @@ resource "google_project_iam_custom_role" "role_cf_executor" {
     "storage.objects.get",
     "storage.objects.list",
     "storage.objects.update",
-    "storage.objects.delete"
+    "storage.objects.delete",
+    "pubsub.topics.publish"
   ]
 }
 

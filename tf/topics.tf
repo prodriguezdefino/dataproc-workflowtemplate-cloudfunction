@@ -13,3 +13,15 @@ resource "google_pubsub_topic" "dataproc_workflow_cf_trigger" {
   name   = "dataproc-workflow-cf-trigger"
   labels = local.labels
 }
+
+resource "google_pubsub_topic" "dataproc_workflow_cf_results" {
+  name   = "dataproc-workflow-cf-results"
+  labels = local.labels
+}
+
+resource "google_pubsub_subscription" "results_subscription" {
+  name                 = "dataproc-workflow-cf-results-subscription"
+  topic                = google_pubsub_topic.dataproc_workflow_cf_results.name
+  ack_deadline_seconds = 600
+  labels               = local.labels
+}

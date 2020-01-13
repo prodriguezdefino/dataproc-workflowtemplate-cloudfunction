@@ -10,35 +10,46 @@
  */
 
 resource "google_storage_bucket" "functions_bucket" {
-  name   = "${var.project}-cf-dataproc-workflow-functions"
-  labels = local.labels
+  name     = "${var.project}-cf-dataproc-workflow-functions"
+  labels   = local.labels
+  location = var.region
 }
 
 resource "google_storage_bucket" "scripts_bucket" {
-  name   = "${var.project}-cf-dataproc-workflow-scripts"
-  labels = local.labels
+  name     = "${var.project}-cf-dataproc-workflow-scripts"
+  labels   = local.labels
+  location = var.region
 }
 
 resource "google_storage_bucket" "configs_bucket" {
-  name   = "${var.project}-cf-dataproc-workflow-configs"
-  labels = local.labels
+  name     = "${var.project}-cf-dataproc-workflow-configs"
+  labels   = local.labels
+  location = var.region
+}
+
+resource "google_storage_bucket" "dataproc_staging_bucket" {
+  name     = "${var.project}-cf-dataproc-workflow-staging"
+  labels   = local.labels
+  location = var.region
 }
 
 data "template_file" "cf_template" {
   template = "${file("${path.module}/functions/cf_launcher.py")}"
   vars = {
-    project       = var.project
-    script_bucket = google_storage_bucket.scripts_bucket.name
-    config_bucket = google_storage_bucket.configs_bucket.name
-    config_file   = "configurations.json"
+    project                 = var.project
+    script_bucket           = google_storage_bucket.scripts_bucket.name
+    config_bucket           = google_storage_bucket.configs_bucket.name
+    propagate_results_topic = google_pubsub_topic.dataproc_workflow_cf_results.name
+    config_file             = "configurations.json"
   }
 }
 
 data "template_file" "cf_configs" {
   template = "${file("${path.module}/configs/configurations.json")}"
   vars = {
-    labels = jsonencode(local.labels)
-    zone   = var.zone
+    labels             = jsonencode(local.labels)
+    zone               = var.zone
+    gcs_staging_bucket = google_storage_bucket.dataproc_staging_bucket.name
   }
 }
 
