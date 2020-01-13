@@ -25,7 +25,7 @@ def retrieve_configuration(storage_client):
     return json.loads(blob.download_as_string())
 
 def result_propagation_callback(future):
-    print("pubsub result notification id: {}".format(future.result()))
+    print("Workflow result Pubsub message notification id {} ".format(future.result()))
 
 def propagate_result(result):
     publisher = pubsub_v1.PublisherClient()
@@ -51,7 +51,7 @@ def execution_callback(operation_future, template_name, cluster_name,
 def trigger_dataproc_jobs(message, context):
     event = None
     if not 'data' in message:
-        print("no data in the pubsub message, nothing to do...")
+        print("no data in the Pubsub message, nothing to do...")
         return
     event = json.loads(base64.b64decode(message['data']).decode('utf-8'))
     dataproc_client = dataproc_v1.WorkflowTemplateServiceClient()
@@ -64,13 +64,13 @@ def trigger_dataproc_jobs(message, context):
     parent = dataproc_client.region_path(project, region)
 
     zone = event.get('zone', 'us-central1-c')
-    job_name = event.get('jobName', 'dataproc-workflow-test')
+    job_name = event.get('job_name', 'dataproc-workflow-test')
     template_name = "projects/{}/regions/{}/workflowTemplates/{}".format(project, region, job_name)
     cluster_name = 'cluster-' + job_name
     config['cluster_config']['cluster_name'] = cluster_name
 
     bucket = '${script_bucket}'
-    cluster_init_actions = event.get('clusterInitActions', [])
+    cluster_init_actions = event.get('cluster_init_actions', [])
 
     if not isinstance(cluster_init_actions, list):
         print("cluster initialization actions should be a list")

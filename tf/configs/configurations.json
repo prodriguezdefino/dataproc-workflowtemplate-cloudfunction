@@ -19,6 +19,17 @@
             "num_instances": 2,
             "machine_type_uri": "n1-standard-1"
         },
+        "software_config":{
+          "properties": {
+            "yarn:yarn.log-aggregation-enable": "true",
+            "yarn:yarn.nodemanager.remote-app-log-dir": "gs://${gcs_logging_bucket}/yarn/logs/",
+            "yarn:yarn.log-aggregation.retain-seconds": "604800",
+            "mapred:mapreduce.jobhistory.done-dir": "gs://${gcs_logging_bucket}/done-dir/",
+            "mapred:mapreduce.jobhistory.intermediate-done-dir": "gs://${gcs_logging_bucket}/intermediate-done-dir/",
+            "spark:spark.eventLog.dir": "gs://${gcs_logging_bucket}/spark-events",
+            "spark:spark.history.fs.logDirectory": "gs://${gcs_logging_bucket}/spark-events"
+          }
+        },
         "initialization_actions" : []
     },
     "labels": ${labels}

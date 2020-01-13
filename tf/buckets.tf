@@ -13,24 +13,40 @@ resource "google_storage_bucket" "functions_bucket" {
   name     = "${var.project}-cf-dataproc-workflow-functions"
   labels   = local.labels
   location = var.region
+
+  force_destroy = true
 }
 
 resource "google_storage_bucket" "scripts_bucket" {
   name     = "${var.project}-cf-dataproc-workflow-scripts"
   labels   = local.labels
   location = var.region
+
+  force_destroy = true
 }
 
 resource "google_storage_bucket" "configs_bucket" {
   name     = "${var.project}-cf-dataproc-workflow-configs"
   labels   = local.labels
   location = var.region
+
+  force_destroy = true
 }
 
 resource "google_storage_bucket" "dataproc_staging_bucket" {
   name     = "${var.project}-cf-dataproc-workflow-staging"
   labels   = local.labels
   location = var.region
+
+  force_destroy = true
+}
+
+resource "google_storage_bucket" "dataproc_logging_bucket" {
+  name     = "${var.project}-cf-dataproc-workflow-logs"
+  labels   = local.labels
+  location = var.region
+
+  force_destroy = true
 }
 
 data "template_file" "cf_template" {
@@ -50,6 +66,7 @@ data "template_file" "cf_configs" {
     labels             = jsonencode(local.labels)
     zone               = var.zone
     gcs_staging_bucket = google_storage_bucket.dataproc_staging_bucket.name
+    gcs_logging_bucket = google_storage_bucket.dataproc_logging_bucket.name
   }
 }
 
