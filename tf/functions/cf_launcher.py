@@ -1,6 +1,8 @@
 import logging
 import base64
 import json
+import time
+import random
 from functools import partial
 from google.cloud import dataproc_v1
 from google.cloud import storage
@@ -59,8 +61,8 @@ def execution_callback(operation_future, metadata):
     metadata['cluster_uuid'] = operation_future.metadata.cluster_uuid
     metadata['template'] = operation_future.metadata.template
     metadata['version'] = operation_future.metadata.version
-    metadata['start_time'] = str(operation_future.metadata.start_time)
-    metadata['end_time'] = str(operation_future.metadata.end_time)
+    metadata['start_time'] = operation_future.metadata.start_time.seconds
+    metadata['end_time'] = operation_future.metadata.end_time.seconds
     metadata['exec_graph'] = str(operation_future.metadata.graph)
     metadata['state'] = operation_future.metadata.state
 
@@ -86,23 +88,39 @@ def trigger_dataproc_jobs(message, context):
         return
 
     # initialize needed GCP clients
-    dataproc_client = dataproc_v1.WorkflowTemplateServiceClient()
+    dataproc_workflow_client = dataproc_v1.WorkflowTemplateServiceClient()
+    dataproc_cluster_client = dataproc_v1.ClusterControllerClient()
     storage_client = storage.Client()
 
     # retrieves the cloud function configuration for storage
     config = retrieve_configuration(storage_client)
 
     # build parent region path for dataproc api requests
-    project = '${project}'
+    project_id = '${project}'
     region = 'global'
-    parent = dataproc_client.region_path(project, region)
+    parent = dataproc_workflow_client.region_path(project_id, region)
 
     # extract events parameters
     zone = event.get('zone', 'us-central1-c')
     job_name = event.get('job_name', 'dataproc-workflow-test')
-    template_name = "projects/{}/regions/{}/workflowTemplates/{}".format(project, region, job_name)
+    template_name = "projects/{}/regions/{}/workflowTemplates/{}".format(project_id, region, job_name)
     cluster_name = 'cluster-' + job_name
     cluster_init_actions = event.get('cluster_init_actions', [])
+    request_id = event.get('request_id', template_name.replace('/', '_'))
+    job_labels = event.get('labels', {})
+    job_labels['job_name']= job_name
+    job_labels['request_id']= request_id
+
+    # lets check if there is another cluster with the same labels already running
+    # randomizing the wait time we can improve the chances of catching duplicated requests
+    time.sleep(random.randint(1, 5))
+    for cluster in dataproc_cluster_client.list_clusters(project_id, region,
+        'labels.job_name = {} AND labels.request_id = {}'.format(job_name, request_id)) :
+        print(
+            "workflow instance already running for same pair job_name and request_id ({},{}), exiting".format(
+            job_name, request_id))
+        return
+
     if not isinstance(cluster_init_actions, list):
         print("cluster initialization actions should be a list")
         return
@@ -115,6 +133,7 @@ def trigger_dataproc_jobs(message, context):
     else:
         cluster_config = config[job_name]
 
+    cluster_config['labels'] = {**cluster_config['labels'], **job_labels}
     cluster_config['cluster_name'] = cluster_name
     cluster_config['config']['initialization_actions'] = cluster_init_actions
 
@@ -127,7 +146,8 @@ def trigger_dataproc_jobs(message, context):
       'jobs': event['jobs']
     }
 
-    response = dataproc_client.instantiate_inline_workflow_template(parent, inline_template)
+    response = dataproc_workflow_client.instantiate_inline_workflow_template(parent,
+        inline_template, request_id=request_id, metadata=[('job_name',job_name)])
 
     # captures operation name for the execution's metadata along with other request parameters
     metadata = {
@@ -136,7 +156,7 @@ def trigger_dataproc_jobs(message, context):
         'cluster_name': cluster_name
     }
 
-    print('workflow instance created, operation\'s name: {}'.format(metadata['operation_name']))
+    print('workflow instance created, request id {}, operation\'s name: {}'.format(request_id, metadata['operation_name']))
 
     # Sets the future to be called when the workflow execution completes.
     # This partial function gets populated with local information, normally

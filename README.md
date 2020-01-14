@@ -72,7 +72,19 @@ A request example can be found as part of the `publish_event_to_topic.sh` script
     {
       "executable_file": "gs://path/to/a/init_script"
     }
-  ]
+  ],
+  "request_id": "", // used to check for potential duplication on the execution request
+  "labels": { // set of labels that will be added to the cluster that will be instantiated
+    "execution-type" : "test"
+  }
 }
 ```
-This request will instantiate a new cluster, execute the PySpark job contained in the location, wait for the completion, destroy the cluster resources and propagate results to the created Pubsub topic for later inspection. For a complete reference, the `jobs` parameter's structure is completely based on the Python API for Dataproc jobs request (check docs [here](https://cloud.google.com/dataproc/docs/reference/rpc/google.cloud.dataproc.v1beta2#orderedjob)).
+This request will:
+  * validate the parameters types
+  * check if there is already another cluster running the proportioned `request_id` for the same `job_name`
+  * instantiate a new cluster
+  * execute the PySpark job contained in the location
+  * when completed, destroy the cluster resources
+  * propagate results to the created Pubsub topic for later inspection
+
+For a complete reference, the `jobs` parameter's structure is completely based on the Python API for Dataproc jobs request (check docs [here](https://cloud.google.com/dataproc/docs/reference/rpc/google.cloud.dataproc.v1beta2#orderedjob)).
