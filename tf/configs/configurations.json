@@ -22,15 +22,19 @@
         "software_config":{
           "properties": {
             "yarn:yarn.log-aggregation-enable": "true",
-            "yarn:yarn.nodemanager.remote-app-log-dir": "gs://${gcs_logging_bucket}/yarn/logs/",
+            "yarn:yarn.nodemanager.remote-app-log-dir": "gs://${gcs_logging_bucket}/request_id=/yarn/logs/",
             "yarn:yarn.log-aggregation.retain-seconds": "604800",
-            "mapred:mapreduce.jobhistory.done-dir": "gs://${gcs_logging_bucket}/done-dir/",
-            "mapred:mapreduce.jobhistory.intermediate-done-dir": "gs://${gcs_logging_bucket}/intermediate-done-dir/",
-            "spark:spark.eventLog.dir": "gs://${gcs_logging_bucket}/spark-events",
-            "spark:spark.history.fs.logDirectory": "gs://${gcs_logging_bucket}/spark-events"
+            "mapred:mapreduce.jobhistory.done-dir": "gs://${gcs_logging_bucket}/request_id=/done-dir/",
+            "mapred:mapreduce.jobhistory.intermediate-done-dir": "gs://${gcs_logging_bucket}/request_id=/intermediate-done-dir/",
+            "spark:spark.eventLog.dir": "gs://${gcs_logging_bucket}/request_id=/spark-events",
+            "spark:spark.history.fs.logDirectory": "gs://${gcs_logging_bucket}/request_id=/spark-events"
           }
         },
-        "initialization_actions" : []
+        "initialization_actions" : [
+          {
+            "executable_file": "gs://${gcs_scripts_bucket}/init_actions/disable_history_server.sh"
+          }
+        ]
     },
     "labels": ${labels}
   }

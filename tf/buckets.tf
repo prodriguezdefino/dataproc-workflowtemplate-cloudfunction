@@ -39,6 +39,15 @@ resource "google_storage_bucket" "dataproc_staging_bucket" {
   location = var.region
 
   force_destroy = true
+
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      age = 30
+    }
+  }
 }
 
 resource "google_storage_bucket" "dataproc_logging_bucket" {
@@ -47,6 +56,15 @@ resource "google_storage_bucket" "dataproc_logging_bucket" {
   location = var.region
 
   force_destroy = true
+
+  lifecycle_rule {
+    action {
+      type = "Delete"
+    }
+    condition {
+      age = 30
+    }
+  }
 }
 
 data "template_file" "cf_template" {
@@ -67,6 +85,7 @@ data "template_file" "cf_configs" {
     zone               = var.zone
     gcs_staging_bucket = google_storage_bucket.dataproc_staging_bucket.name
     gcs_logging_bucket = google_storage_bucket.dataproc_logging_bucket.name
+    gcs_scripts_bucket = google_storage_bucket.scripts_bucket.name
   }
 }
 
@@ -89,6 +108,12 @@ resource "google_storage_bucket_object" "function_object" {
   name   = "cf_trigger_dataproc_jobs-${data.archive_file.function_zip.output_base64sha256}.zip"
   bucket = google_storage_bucket.functions_bucket.name
   source = "${path.module}/files/cf_trigger_dataproc_jobs.zip"
+}
+
+resource "google_storage_bucket_object" "disable_history_server_object" {
+  name   = "init_actions/disable_history_server.sh"
+  bucket = google_storage_bucket.scripts_bucket.name
+  source = "${path.module}/scripts/init_actions/disable_history_server.sh"
 }
 
 resource "google_storage_bucket_object" "script_object" {

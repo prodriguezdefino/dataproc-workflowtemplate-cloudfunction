@@ -135,7 +135,11 @@ def trigger_dataproc_jobs(message, context):
 
     cluster_config['labels'] = {**cluster_config['labels'], **job_labels}
     cluster_config['cluster_name'] = cluster_name
-    cluster_config['config']['initialization_actions'] = cluster_init_actions
+    cluster_config['config']['initialization_actions'] = cluster_init_actions + cluster_config['config']['initialization_actions']
+    # introduce request id on the log paths for the cluster config
+    for property, value in cluster_config['config']['software_config']['properties'].items():
+        cluster_config['config']['software_config']['properties'][property] = value.replace(
+            'request_id=','request_id={}'.format(request_id))
 
     # creates inline template request
     inline_template = {
@@ -145,6 +149,8 @@ def trigger_dataproc_jobs(message, context):
       },
       'jobs': event['jobs']
     }
+
+    print(inline_template)
 
     response = dataproc_workflow_client.instantiate_inline_workflow_template(parent,
         inline_template, request_id=request_id, metadata=[('job_name',job_name)])
