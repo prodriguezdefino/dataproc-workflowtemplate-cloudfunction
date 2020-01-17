@@ -9,6 +9,12 @@
                 "https://www.googleapis.com/auth/cloud.useraccounts.readonly",
                 "https://www.googleapis.com/auth/devstorage.full_control",
                 "https://www.googleapis.com/auth/logging.write"
+            ],
+            "subnetwork_uri": "${subnetwork_uri}",
+            "internal_ip_only": true,
+            "service_account": "${service_account}",
+            "tags":[
+              "${network_tag}"
             ]
         },
         "master_config": {
@@ -22,12 +28,17 @@
         "software_config":{
           "properties": {
             "yarn:yarn.log-aggregation-enable": "true",
-            "yarn:yarn.nodemanager.remote-app-log-dir": "gs://${gcs_logging_bucket}/request_id=/yarn/logs/",
+            "yarn:yarn.nodemanager.remote-app-log-dir": "gs://${gcs_logging_bucket}/yarn/logs/",
             "yarn:yarn.log-aggregation.retain-seconds": "604800",
-            "mapred:mapreduce.jobhistory.done-dir": "gs://${gcs_logging_bucket}/request_id=/done-dir/",
-            "mapred:mapreduce.jobhistory.intermediate-done-dir": "gs://${gcs_logging_bucket}/request_id=/intermediate-done-dir/",
-            "spark:spark.eventLog.dir": "gs://${gcs_logging_bucket}/request_id=/spark-events",
-            "spark:spark.history.fs.logDirectory": "gs://${gcs_logging_bucket}/request_id=/spark-events"
+            "mapred:mapreduce.jobhistory.done-dir": "gs://${gcs_logging_bucket}/done-dir/",
+            "mapred:mapreduce.jobhistory.intermediate-done-dir": "gs://${gcs_logging_bucket}/intermediate-done-dir/",
+            "spark:spark.eventLog.dir": "gs://${gcs_logging_bucket}/spark-events",
+            "spark:spark.history.fs.logDirectory": "gs://${gcs_logging_bucket}/spark-events",
+            "yarn:yarn.log.server.url": "http://${history_server}-m:19888/jobhistory/logs",
+            "mapred:mapreduce.jobhistory.address": "${history_server}-m:10020",
+            "mapred:mapreduce.jobhistory.webapp.address": "${history_server}-m:19888",
+            "spark:spark.ui.filters": "org.apache.spark.deploy.yarn.YarnProxyRedirectFilter",
+            "spark:spark.yarn.historyServer.address": "${history_server}-m:18080"
           }
         },
         "initialization_actions" : [

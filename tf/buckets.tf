@@ -71,6 +71,7 @@ data "template_file" "cf_template" {
   template = "${file("${path.module}/functions/cf_launcher.py")}"
   vars = {
     project                 = var.project
+    region                  = var.region
     script_bucket           = google_storage_bucket.scripts_bucket.name
     config_bucket           = google_storage_bucket.configs_bucket.name
     propagate_results_topic = google_pubsub_topic.dataproc_workflow_cf_results.name
@@ -86,6 +87,10 @@ data "template_file" "cf_configs" {
     gcs_staging_bucket = google_storage_bucket.dataproc_staging_bucket.name
     gcs_logging_bucket = google_storage_bucket.dataproc_logging_bucket.name
     gcs_scripts_bucket = google_storage_bucket.scripts_bucket.name
+    history_server     = var.history_server
+    network_tag        = var.network_tag
+    subnetwork_uri     = module.vpc.subnets_self_links[0]
+    service_account    = google_service_account.sa_dataproc_worker.email
   }
 }
 

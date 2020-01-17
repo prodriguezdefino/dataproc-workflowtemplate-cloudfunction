@@ -13,6 +13,10 @@ resource "google_service_account" "sa_cf_executor" {
   account_id   = "sa-cf-executor"
   display_name = "Dataproc Worflow CF Executor"
 }
+resource "google_service_account" "sa_dataproc_worker" {
+  account_id   = "sa-dataproc-worker"
+  display_name = "Dataproc Worker"
+}
 
 resource "google_project_iam_custom_role" "role_cf_executor" {
   role_id     = "dataproc_workflow_cf_executor"
@@ -42,8 +46,14 @@ resource "google_project_iam_custom_role" "role_cf_executor" {
   ]
 }
 
-resource "google_project_iam_member" "project" {
+resource "google_project_iam_member" "cf_executor" {
   project = var.project
   role    = "projects/${var.project}/roles/${google_project_iam_custom_role.role_cf_executor.role_id}"
   member  = "serviceAccount:${google_service_account.sa_cf_executor.email}"
+}
+
+resource "google_project_iam_member" "dataproc_worker" {
+  project = var.project
+  role    = "roles/dataproc.worker"
+  member  = "serviceAccount:${google_service_account.sa_dataproc_worker.email}"
 }

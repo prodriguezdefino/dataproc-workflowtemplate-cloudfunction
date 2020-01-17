@@ -20,3 +20,18 @@ variable "region" {
 variable "zone" {
   type = string
 }
+
+variable "history_server" {
+  type    = string
+  default = "history-server"
+}
+
+variable "network_tag" {
+  type    = string
+  default = "hadoop-history-ui-access"
+}
+
+variable "network_name" {
+  type    = string
+  default = "test"
+}

@@ -5,8 +5,11 @@ import time
 import random
 from functools import partial
 from google.cloud import dataproc_v1
+from google.cloud.dataproc_v1.gapic.transports import cluster_controller_grpc_transport
+from google.cloud.dataproc_v1.gapic.transports import workflow_template_service_grpc_transport
 from google.cloud import storage
 from google.cloud import pubsub_v1
+from google.protobuf import json_format
 
 # Copyright 2018 Google LLC. All rights reserved. To the extent this Software is provided by Google (“Google Software”),
 # it is provided for demonstrative purposes only, and is supplied "AS IS" without any warranties or support commitment.
@@ -56,6 +59,7 @@ def execution_callback(operation_future, metadata):
     operation_future: the future reference for the execution, fulfilled when execution ends
     metadata: the workflow request metadata
     """
+
     result = str(operation_future.result()) if operation_future.result() is not None or operation_future.result() is not Empty else 'ok'
     metadata['cluster_name'] = operation_future.metadata.cluster_name
     metadata['cluster_uuid'] = operation_future.metadata.cluster_uuid
@@ -63,7 +67,7 @@ def execution_callback(operation_future, metadata):
     metadata['version'] = operation_future.metadata.version
     metadata['start_time'] = operation_future.metadata.start_time.seconds
     metadata['end_time'] = operation_future.metadata.end_time.seconds
-    metadata['exec_graph'] = str(operation_future.metadata.graph)
+    metadata['exec_graph'] = json_format.MessageToDict(operation_future.metadata.graph)
     metadata['state'] = operation_future.metadata.state
 
     propagate_result({'metadata': metadata, 'result': result})
@@ -87,17 +91,24 @@ def trigger_dataproc_jobs(message, context):
         print("jobs property not present in the event, no work to be done...")
         return
 
+    project_id = '${project}'
+    region = '${region}'
+
     # initialize needed GCP clients
-    dataproc_workflow_client = dataproc_v1.WorkflowTemplateServiceClient()
-    dataproc_cluster_client = dataproc_v1.ClusterControllerClient()
+    wf_client_transport = (workflow_template_service_grpc_transport
+                    .WorkflowTemplateServiceGrpcTransport(
+                        address="{}-dataproc.googleapis.com:443".format(region)))
+    dataproc_workflow_client = dataproc_v1.WorkflowTemplateServiceClient(wf_client_transport)
+    dp_client_transport = (cluster_controller_grpc_transport
+        .ClusterControllerGrpcTransport(
+            address='{}-dataproc.googleapis.com:443'.format(region)))
+    dataproc_cluster_client = dataproc_v1.ClusterControllerClient(dp_client_transport)
     storage_client = storage.Client()
 
     # retrieves the cloud function configuration for storage
     config = retrieve_configuration(storage_client)
 
     # build parent region path for dataproc api requests
-    project_id = '${project}'
-    region = 'global'
     parent = dataproc_workflow_client.region_path(project_id, region)
 
     # extract events parameters
@@ -150,8 +161,7 @@ def trigger_dataproc_jobs(message, context):
       'jobs': event['jobs']
     }
 
-    print(inline_template)
-
+    # sends the request to instantiate the workflow inlined template
     response = dataproc_workflow_client.instantiate_inline_workflow_template(parent,
         inline_template, request_id=request_id, metadata=[('job_name',job_name)])
 
