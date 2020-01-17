@@ -1,6 +1,7 @@
 resource "google_dataproc_cluster" "history-server" {
   depends_on = [
     google_storage_bucket.dataproc_logging_bucket,
+    google_project_service.dataproc_service
   ]
 
   project = var.project
