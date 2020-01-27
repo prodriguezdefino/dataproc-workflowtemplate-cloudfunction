@@ -10,6 +10,7 @@ from google.cloud.dataproc_v1.gapic.transports import workflow_template_service_
 from google.cloud import storage
 from google.cloud import pubsub_v1
 from google.protobuf import json_format
+from google.protobuf.duration_pb2 import Duration
 
 # Copyright 2018 Google LLC. All rights reserved. To the extent this Software is provided by Google (“Google Software”),
 # it is provided for demonstrative purposes only, and is supplied "AS IS" without any warranties or support commitment.
@@ -146,11 +147,11 @@ def trigger_dataproc_jobs(message, context):
 
     cluster_config['labels'] = {**cluster_config['labels'], **job_labels}
     cluster_config['cluster_name'] = cluster_name
-    cluster_config['config']['initialization_actions'] = cluster_init_actions + cluster_config['config']['initialization_actions']
-    # introduce request id on the log paths for the cluster config
-    for property, value in cluster_config['config']['software_config']['properties'].items():
-        cluster_config['config']['software_config']['properties'][property] = value.replace(
-            'request_id=','request_id={}'.format(request_id))
+    cluster_config['config']['initialization_actions'] = cluster_config['config']['initialization_actions'] + cluster_init_actions
+    for action in cluster_config['config']['initialization_actions']:
+        if 'execution_timeout' in action:
+            timeout = Duration(seconds=action['execution_timeout'])
+            action['execution_timeout'] = timeout
 
     # creates inline template request
     inline_template = {
