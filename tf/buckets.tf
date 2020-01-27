@@ -121,6 +121,12 @@ resource "google_storage_bucket_object" "disable_history_server_object" {
   source = "${path.module}/scripts/init_actions/disable_history_server.sh"
 }
 
+resource "google_storage_bucket_object" "dummy_init_object" {
+  name   = "init_actions/dummy.sh"
+  bucket = google_storage_bucket.scripts_bucket.name
+  source = "${path.module}/scripts/init_actions/dummy.sh"
+}
+
 resource "google_storage_bucket_object" "script_object" {
   name   = "sparktest.py"
   bucket = google_storage_bucket.scripts_bucket.name
