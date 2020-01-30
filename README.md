@@ -74,8 +74,8 @@ A request example can be found as part of the `publish_event_to_topic.sh` script
       "execution_timeout": 700
     }
   ],
-  "request_id": "", // used to check for potential duplication on the execution request
-  "labels": { // set of labels that will be added to the cluster that will be instantiated
+  "request_id": "",      // used to check for potential duplication on the execution request
+  "labels": {            // set of labels that will be added to the cluster that will be instantiated
     "execution-type" : "test"
   }
 }
@@ -94,7 +94,7 @@ For a complete reference, the `jobs` parameter's structure is completely based o
 
 __Note:__ this is not intended to be run in a production setup, but it can help to troubleshoot execution and understand better current shell scripts that are run in an always-on cluster through `ssh`.
 
-Is common to have shell scripts that run multiple hadoop, hive, spark workloads and migrating them to a workflow step type of execution may take time, so it could be useful to run a shell script that executes the compound workload right after the cluster has been initialized.
+Is common to have shell scripts that run multiple Hadoop, Hive, Spark workloads and migrating them to a workflow step type of execution may take time; so it could be useful to run a shell script that executes the compound workload right after the cluster has been initialized, enabling the test the execution on an ephemeral cluster before completing the migration.
 
 With this idea, we could then create a request that executes a dummy Dataproc workload as a step, for example a Hive query that returns the current timestamp, and include a `cluster_init_action` that uses the [`execute_script.sh`](tf/scripts/init_actions/execute_script.sh) shell script to include the desired Dataproc job execution as part of the initialization lifecycle.
 
@@ -119,7 +119,7 @@ This could be an example request:
   "metadata": { // this metadata is set in the GCE instances of the cluster and used by the execute_script.sh init action
     "driver-script-bucket" : "some-gcs-location", // bucket name where the script files are stored
     "driver-script-path" : "scripts",             // path inside the bucket, the script will download the content recursively
-    "driver-script-entry" : "run_hive.sh",        // the shell script to execute
+    "driver-script-entry" : "run_hive.sh",        // the shell script to execute, should be included in the previous path
     "driver-script-command" : "bash "             // the command to execute
   },
   "labels":{
@@ -128,6 +128,8 @@ This could be an example request:
   "request_id":"3a73a812-3706-11ea-82c0-43a30c9fa836"
 }
 ```
+
+As mentioned in the example, the `execute_script.sh` startup script uses the metadata set on the machine to download recursively a GCS location path and execute a entry script (in that case a bash script) that may contain multiple Dataproc jobs. This startup action only executes in the master node, it expects the indicated metadata entries to be defined for the instance and in case of failure will mark the whole workflow execution as failed.
 
 The previous request could be changed to execute a Dataproc job, for example, by changing the `driver-script-command` entry to something like `hive -f ` and the `driver-script-entry` to an existing Hive script.
 
@@ -140,6 +142,6 @@ The Cloud Function script can be run locally or in a GCE instance if necessary, 
 * install requirements with `pip3 install -r requirements.txt`
 * create a file `request.json` with the request to be processed (review previous sections)
 * modify script's constants in the file with meaningful values
-* run the script with `python 3 main.py request.json`, the script will print out the request and the operation identifiers
+* run the script with `python3 main.py request.json`, the script will print out the request and the operation identifiers
 
 __Note:__ the standalone script does not execute the future operation result callback, check on the workflow section of GCP console to review results.
