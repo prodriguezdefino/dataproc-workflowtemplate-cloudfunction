@@ -87,7 +87,7 @@ data "template_file" "cf_configs" {
     gcs_staging_bucket = google_storage_bucket.dataproc_staging_bucket.name
     gcs_logging_bucket = google_storage_bucket.dataproc_logging_bucket.name
     gcs_scripts_bucket = google_storage_bucket.scripts_bucket.name
-    history_server     = var.history_server
+    history_server     = var.history_server_name
     network_tag        = var.network_tag
     subnetwork_uri     = module.vpc.subnets_self_links[0]
     service_account    = google_service_account.sa_dataproc_worker.email
@@ -121,16 +121,34 @@ resource "google_storage_bucket_object" "disable_history_server_object" {
   source = "${path.module}/scripts/init_actions/disable_history_server.sh"
 }
 
-resource "google_storage_bucket_object" "dummy_init_object" {
-  name   = "init_actions/dummy.sh"
+resource "google_storage_bucket_object" "execute_script_init_object" {
+  name   = "init_actions/execute_script.sh"
   bucket = google_storage_bucket.scripts_bucket.name
-  source = "${path.module}/scripts/init_actions/dummy.sh"
+  source = "${path.module}/scripts/init_actions/execute_script.sh"
 }
 
-resource "google_storage_bucket_object" "script_object" {
-  name   = "sparktest.py"
+resource "google_storage_bucket_object" "script_object_spark" {
+  name   = "scripts/sparktest.py"
   bucket = google_storage_bucket.scripts_bucket.name
   source = "${path.module}/scripts/sparktest.py"
+}
+
+resource "google_storage_bucket_object" "script_object_hive" {
+  name   = "scripts/hivetest.sql"
+  bucket = google_storage_bucket.scripts_bucket.name
+  source = "${path.module}/scripts/hivetest.sql"
+}
+
+resource "google_storage_bucket_object" "script_object_shell" {
+  name   = "scripts/run_hive.sh"
+  bucket = google_storage_bucket.scripts_bucket.name
+  source = "${path.module}/scripts/run_hive.sh"
+}
+
+resource "google_storage_bucket_object" "script_object_dummy" {
+  name   = "scripts/dummy_job.sql"
+  bucket = google_storage_bucket.scripts_bucket.name
+  source = "${path.module}/scripts/dummy_job.sql"
 }
 
 resource "google_storage_bucket_object" "configs_object" {
