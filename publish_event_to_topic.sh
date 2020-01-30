@@ -4,7 +4,7 @@ set -e
 # sends a dummy workflow execution request
 
 topic_name=$1
-pyspark_script_location=$2
+hive_script_location=$2
 
 req_msg=$(cat <<EOM
 {
@@ -12,19 +12,25 @@ req_msg=$(cat <<EOM
   "jobs":[
     {
       "step_id":"step1",
-      "pyspark_job": {
-        "main_python_file_uri": "$pyspark_script_location"
+      "hive_job": {
+        "query_file_uri": "$hive_script_location"
       }
     }
   ],
   "cluster_init_actions": [
     {
-      "executable_file": "gs://pabs-tf-tests-cf-dataproc-workflow-scripts/init_actions/dummy.sh",
+      "executable_file": "gs://pabs-tf-tests-cf-dataproc-workflow-scripts/init_actions/execute_script.sh",
       "execution_timeout": 700
     }
   ],
   "labels":{
     "execution-type":"test"
+  },
+  "metadata": {
+    "driver-script-bucket" : "pabs-tf-tests-cf-dataproc-workflow-scripts",
+    "driver-script-path" : "scripts",
+    "driver-script-entry" : "run_hive.sh",
+    "driver-script-command" : "bash "
   },
   "request_id":"3a73a812-3706-11ea-82c0-43a30c9fa836"
 }

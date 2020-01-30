@@ -70,7 +70,8 @@ A request example can be found as part of the `publish_event_to_topic.sh` script
   ],
   "cluster_init_actions": [
     {
-      "executable_file": "gs://path/to/a/init_script"
+      "executable_file": "gs://path/to/a/init_script",
+      "execution_timeout": 700
     }
   ],
   "request_id": "", // used to check for potential duplication on the execution request
@@ -82,9 +83,50 @@ A request example can be found as part of the `publish_event_to_topic.sh` script
 This request will:
   * validate the parameters types
   * check if there is already another cluster running the proportioned `request_id` for the same `job_name`
-  * instantiate a new cluster
+  * instantiate a new cluster and run the specified init action with a custom timeout
   * execute the PySpark job contained in the location
   * when completed, destroy the cluster resources
   * propagate results to the created Pubsub topic for later inspection
 
 For a complete reference, the `jobs` parameter's structure is completely based on the Python API for Dataproc jobs request (check docs [here](https://cloud.google.com/dataproc/docs/reference/rpc/google.cloud.dataproc.v1beta2#orderedjob)).
+
+# Execute composed shell script
+
+__Note:__ this is not intended to be run in a production setup, but it can help to troubleshoot execution and understand better current shell scripts that are run in an always-on cluster through `ssh`.
+
+Is common to have shell scripts that run multiple hadoop, hive, spark workloads and migrating them to a workflow step type of execution may take time, so it could be useful to run a shell script that executes the compound workload right after the cluster has been initialized.
+
+With this idea, we could then create a request that executes a dummy Dataproc workload as a step, for example a Hive query that returns the current timestamp, and include a `cluster_init_action` that uses the [`execute_script.sh`](scripts/init_actions/execute_script.sh) shell script to include the desired Dataproc job execution as part of the initialization lifecycle.
+
+This could be an example request:
+```
+{
+  "job_name":"example-name",
+  "jobs":[
+    {
+      "step_id":"step1",
+      "hive_job": {
+        "query_file_uri": "gs://some-gcs-location/with/dummy/hive/script.sql"
+      }
+    }
+  ],
+  "cluster_init_actions": [
+    {
+      "executable_file": "gs://some-gcs-location/init_actions/execute_script.sh",
+      "execution_timeout": 700
+    }
+  ],
+  "metadata": { // this metadata is set in the GCE instances of the cluster and used by the execute_script.sh init action
+    "driver-script-bucket" : "some-gcs-location", // bucket name where the script files are stored
+    "driver-script-path" : "scripts",             // path inside the bucket, the script will download the content recursively
+    "driver-script-entry" : "run_hive.sh",        // the shell script to execute
+    "driver-script-command" : "bash "             // the command to execute
+  },
+  "labels":{
+    "execution-type":"test"
+  },
+  "request_id":"3a73a812-3706-11ea-82c0-43a30c9fa836"
+}
+```
+
+The previous request could be changed to execute a Dataproc job, for example, by changing the `driver-script-command` entry to something like `hive -f ` and the `driver-script-entry` to an existing Hive script.
