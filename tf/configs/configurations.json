@@ -15,7 +15,10 @@
             "service_account": "${service_account}",
             "tags":[
               "${network_tag}"
-            ]
+            ],
+            "metadata": {
+              
+            }
         },
         "master_config": {
             "num_instances": 1,
