@@ -61,7 +61,7 @@ def execution_callback(operation_future, metadata):
     metadata: the workflow request metadata
     """
 
-    result = str(operation_future.result()) if operation_future.result() is not None or operation_future.result() is not Empty else 'ok'
+    result = 'error: ' + str(operation_future.exception()) if operation_future.exception() is not None else 'ok'
     metadata['cluster_name'] = operation_future.metadata.cluster_name
     metadata['cluster_uuid'] = operation_future.metadata.cluster_uuid
     metadata['template'] = operation_future.metadata.template
@@ -71,7 +71,7 @@ def execution_callback(operation_future, metadata):
     metadata['exec_graph'] = json_format.MessageToDict(operation_future.metadata.graph)
     metadata['state'] = operation_future.metadata.state
 
-    propagate_result({'metadata': metadata, 'result': result})
+    propagate_result({'metadata' : metadata, 'result' : result})
 
 def trigger_dataproc_jobs(message, context):
     """ Entry point for the CloudFunction
@@ -122,6 +122,7 @@ def trigger_dataproc_jobs(message, context):
     job_labels = event.get('labels', {})
     job_labels['job_name']= job_name
     job_labels['request_id']= request_id
+    req_metadata = event.get('metadata', {})
 
     # lets check if there is another cluster with the same labels already running
     # randomizing the wait time we can improve the chances of catching duplicated requests
@@ -147,6 +148,7 @@ def trigger_dataproc_jobs(message, context):
 
     cluster_config['labels'] = {**cluster_config['labels'], **job_labels}
     cluster_config['cluster_name'] = cluster_name
+    cluster_config['config']['gce_cluster_config']['metadata'] = {**cluster_config['config']['gce_cluster_config']['metadata'], **req_metadata}
     cluster_config['config']['initialization_actions'] = cluster_config['config']['initialization_actions'] + cluster_init_actions
     for action in cluster_config['config']['initialization_actions']:
         if 'execution_timeout' in action:
