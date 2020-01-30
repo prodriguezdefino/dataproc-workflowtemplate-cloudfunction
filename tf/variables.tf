@@ -21,7 +21,7 @@ variable "zone" {
   type = string
 }
 
-variable "history_server" {
+variable "history_server_name" {
   type    = string
   default = "history-server"
 }
@@ -34,4 +34,9 @@ variable "network_tag" {
 variable "network_name" {
   type    = string
   default = "test"
+}
+
+variable "history_server_available" {
+  type    = bool
+  default = true
 }

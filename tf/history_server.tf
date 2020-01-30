@@ -1,11 +1,12 @@
 resource "google_dataproc_cluster" "history-server" {
+  count = var.history_server_available ? 1 : 0
   depends_on = [
     google_storage_bucket.dataproc_logging_bucket,
     google_project_service.dataproc_service
   ]
 
   project = var.project
-  name    = var.history_server
+  name    = var.history_server_name
   region  = var.region
   labels  = local.labels
 
@@ -29,17 +30,17 @@ resource "google_dataproc_cluster" "history-server" {
         "yarn:yarn.log-aggregation-enable"                  = "true"
         "yarn:yarn.nodemanager.remote-app-log-dir"          = "gs://${google_storage_bucket.dataproc_logging_bucket.name}/yarn/logs/"
         "yarn:yarn.log-aggregation.retain-seconds"          = "604800"
-        "yarn:yarn.log.server.url"                          = "http://${var.history_server}-m:19888/jobhistory/logs"
+        "yarn:yarn.log.server.url"                          = "http://${var.history_server_name}-m:19888/jobhistory/logs"
         "mapred:mapreduce.jobhistory.always-scan-user-dir"  = "true"
-        "mapred:mapreduce.jobhistory.address"               = "${var.history_server}-m:10020"
-        "mapred:mapreduce.jobhistory.webapp.address"        = "${var.history_server}-m:19888"
+        "mapred:mapreduce.jobhistory.address"               = "${var.history_server_name}-m:10020"
+        "mapred:mapreduce.jobhistory.webapp.address"        = "${var.history_server_name}-m:19888"
         "mapred:mapreduce.jobhistory.done-dir"              = "gs://${google_storage_bucket.dataproc_logging_bucket.name}/done-dir"
         "mapred:mapreduce.jobhistory.intermediate-done-dir" = "gs://${google_storage_bucket.dataproc_logging_bucket.name}/intermediate-done-dir"
         "spark:spark.eventLog.dir"                          = "gs://${google_storage_bucket.dataproc_logging_bucket.name}/spark-events/"
         "spark:spark.history.fs.logDirectory"               = "gs://${google_storage_bucket.dataproc_logging_bucket.name}/spark-events/"
         "spark:spark.ui.enabled"                            = "true"
         "spark:spark.ui.filters"                            = "org.apache.spark.deploy.yarn.YarnProxyRedirectFilter"
-        "spark:spark.yarn.historyServer.address"            = "${var.history_server}-m:18080"
+        "spark:spark.yarn.historyServer.address"            = "${var.history_server_name}-m:18080"
       }
     }
 
