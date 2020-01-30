@@ -9,7 +9,7 @@
  * governed by the terms of that agreement, and the foregoing does not supersede that agreement.
  */
 
-resource "google_cloudfunctions_function" "function" {
+resource "google_cloudfunctions_function" "function_trigger_dataproc_workflow" {
   name        = "dataproc-workflow-trigger"
   description = "Triggers the execution of a Dataproc workflow, creating a ephemeral cluster and executing a chain of tasks."
   runtime     = "python37"
@@ -38,9 +38,9 @@ resource "google_cloudfunctions_function" "function" {
 }
 
 resource "google_cloudfunctions_function_iam_member" "invoker" {
-  project        = google_cloudfunctions_function.function.project
-  region         = google_cloudfunctions_function.function.region
-  cloud_function = google_cloudfunctions_function.function.name
+  project        = var.project
+  region         = var.region
+  cloud_function = google_cloudfunctions_function.function_trigger_dataproc_workflow.name
 
   role   = "roles/cloudfunctions.invoker"
   member = "user:prodriguezdefino@gmail.com"
