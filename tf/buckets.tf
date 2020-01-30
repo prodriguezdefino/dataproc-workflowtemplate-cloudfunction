@@ -142,7 +142,7 @@ resource "google_storage_bucket_object" "script_object_hive" {
 resource "google_storage_bucket_object" "script_object_shell" {
   name   = "scripts/run_hive.sh"
   bucket = google_storage_bucket.scripts_bucket.name
-  source = "${path.module}/scripts/run_hive.sh"
+  source = "${path.module}/scripts/run_scripts.sh"
 }
 
 resource "google_storage_bucket_object" "script_object_dummy" {
