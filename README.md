@@ -96,7 +96,7 @@ __Note:__ this is not intended to be run in a production setup, but it can help 
 
 Is common to have shell scripts that run multiple hadoop, hive, spark workloads and migrating them to a workflow step type of execution may take time, so it could be useful to run a shell script that executes the compound workload right after the cluster has been initialized.
 
-With this idea, we could then create a request that executes a dummy Dataproc workload as a step, for example a Hive query that returns the current timestamp, and include a `cluster_init_action` that uses the [`execute_script.sh`](scripts/init_actions/execute_script.sh) shell script to include the desired Dataproc job execution as part of the initialization lifecycle.
+With this idea, we could then create a request that executes a dummy Dataproc workload as a step, for example a Hive query that returns the current timestamp, and include a `cluster_init_action` that uses the [`execute_script.sh`](tf/scripts/init_actions/execute_script.sh) shell script to include the desired Dataproc job execution as part of the initialization lifecycle.
 
 This could be an example request:
 ```
