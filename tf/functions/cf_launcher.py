@@ -3,6 +3,7 @@ import base64
 import json
 import time
 import random
+import sys
 from functools import partial
 from google.cloud import dataproc_v1
 from google.cloud.dataproc_v1.gapic.transports import cluster_controller_grpc_transport
@@ -21,6 +22,14 @@ from google.protobuf.duration_pb2 import Duration
 # with Google with respect to such software, your software usage rights, related restrictions and other terms are
 # governed by the terms of that agreement, and the foregoing does not supersede that agreement.
 
+# Constants, in case of local tests substitute the variables with proper names.
+config_bucket = '${config_bucket}'
+config_file = '${config_file}'
+project_id = '${project}'
+region_id = '${region}'
+zone_id = '${zone}'
+results_topic = '${propagate_results_topic}'
+
 def retrieve_configuration(storage_client):
     """ Retrieves Cloud Function configuration
     Using the configured bucket and file, downloads the existing configuration
@@ -28,9 +37,6 @@ def retrieve_configuration(storage_client):
 
     storage_client: an initialized GCS client
     """
-    config_bucket = '${config_bucket}'
-    config_file = '${config_file}'
-
     bucket = storage_client.get_bucket(config_bucket)
     blob = bucket.get_blob(config_file)
 
@@ -49,7 +55,7 @@ def propagate_result(result):
     result: workflow execution information
     """
     publisher = pubsub_v1.PublisherClient()
-    topic_path = publisher.topic_path('${project}', '${propagate_results_topic}')
+    topic_path = publisher.topic_path(project_id, results_topic)
     future = publisher.publish(topic_path, data=json.dumps(result).encode("utf-8"))
     future.add_done_callback(result_propagation_callback)
 
@@ -80,7 +86,6 @@ def trigger_dataproc_jobs(message, context):
 
     message: the Pubsub message
     context: the Cloud Function context information
-
     """
 
     if not 'data' in message:
@@ -92,17 +97,14 @@ def trigger_dataproc_jobs(message, context):
         print("jobs property not present in the event, no work to be done...")
         return
 
-    project_id = '${project}'
-    region = '${region}'
-
     # initialize needed GCP clients
     wf_client_transport = (workflow_template_service_grpc_transport
                     .WorkflowTemplateServiceGrpcTransport(
-                        address="{}-dataproc.googleapis.com:443".format(region)))
+                        address="{}-dataproc.googleapis.com:443".format(region_id)))
     dataproc_workflow_client = dataproc_v1.WorkflowTemplateServiceClient(wf_client_transport)
     dp_client_transport = (cluster_controller_grpc_transport
         .ClusterControllerGrpcTransport(
-            address='{}-dataproc.googleapis.com:443'.format(region)))
+            address='{}-dataproc.googleapis.com:443'.format(region_id)))
     dataproc_cluster_client = dataproc_v1.ClusterControllerClient(dp_client_transport)
     storage_client = storage.Client()
 
@@ -110,12 +112,12 @@ def trigger_dataproc_jobs(message, context):
     config = retrieve_configuration(storage_client)
 
     # build parent region path for dataproc api requests
-    parent = dataproc_workflow_client.region_path(project_id, region)
+    parent = dataproc_workflow_client.region_path(project_id, region_id)
 
     # extract events parameters
-    zone = event.get('zone', 'us-central1-c')
+    zone = event.get('zone', zone_id)
     job_name = event.get('job_name', 'dataproc-workflow-test')
-    template_name = "projects/{}/regions/{}/workflowTemplates/{}".format(project_id, region, job_name)
+    template_name = "projects/{}/regions/{}/workflowTemplates/{}".format(project_id, region_id, job_name)
     cluster_name = 'cluster-' + job_name
     cluster_init_actions = event.get('cluster_init_actions', [])
     request_id = event.get('request_id', template_name.replace('/', '_'))
@@ -127,7 +129,7 @@ def trigger_dataproc_jobs(message, context):
     # lets check if there is another cluster with the same labels already running
     # randomizing the wait time we can improve the chances of catching duplicated requests
     time.sleep(random.randint(1, 5))
-    for cluster in dataproc_cluster_client.list_clusters(project_id, region,
+    for cluster in dataproc_cluster_client.list_clusters(project_id, region_id,
         'labels.job_name = {} AND labels.request_id = {}'.format(job_name, request_id)) :
         print(
             "workflow instance already running for same pair job_name and request_id ({},{}), exiting".format(
@@ -149,6 +151,7 @@ def trigger_dataproc_jobs(message, context):
     cluster_config['labels'] = {**cluster_config['labels'], **job_labels}
     cluster_config['cluster_name'] = cluster_name
     cluster_config['config']['gce_cluster_config']['metadata'] = {**cluster_config['config']['gce_cluster_config']['metadata'], **req_metadata}
+    cluster_config['config']['gce_cluster_config']['zone_uri'] = zone
     cluster_config['config']['initialization_actions'] = cluster_config['config']['initialization_actions'] + cluster_init_actions
     for action in cluster_config['config']['initialization_actions']:
         if 'execution_timeout' in action:
@@ -182,3 +185,12 @@ def trigger_dataproc_jobs(message, context):
     # not present at the callback execution time, to enrich logging and event
     # results propagation.
     response.add_done_callback(partial(execution_callback, metadata=metadata))
+
+
+if __name__ == '__main__':
+    request_file = sys.argv[1]
+    with open(request_file, 'r') as content_file:
+        content = content_file.read()
+        message = {}
+        message['data'] = base64.b64encode(content.encode('ascii'))
+        trigger_dataproc_jobs(message,{})

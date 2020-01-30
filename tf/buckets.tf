@@ -72,7 +72,7 @@ data "template_file" "cf_template" {
   vars = {
     project                 = var.project
     region                  = var.region
-    script_bucket           = google_storage_bucket.scripts_bucket.name
+    zone                    = var.zone
     config_bucket           = google_storage_bucket.configs_bucket.name
     propagate_results_topic = google_pubsub_topic.dataproc_workflow_cf_results.name
     config_file             = "configurations.json"

@@ -90,7 +90,7 @@ This request will:
 
 For a complete reference, the `jobs` parameter's structure is completely based on the Python API for Dataproc jobs request (check docs [here](https://cloud.google.com/dataproc/docs/reference/rpc/google.cloud.dataproc.v1beta2#orderedjob)).
 
-# Execute composed shell script
+## Execute composed shell script
 
 __Note:__ this is not intended to be run in a production setup, but it can help to troubleshoot execution and understand better current shell scripts that are run in an always-on cluster through `ssh`.
 
@@ -130,3 +130,16 @@ This could be an example request:
 ```
 
 The previous request could be changed to execute a Dataproc job, for example, by changing the `driver-script-command` entry to something like `hive -f ` and the `driver-script-entry` to an existing Hive script.
+
+## Running the script from local environment
+
+The Cloud Function script can be run locally or in a GCE instance if necessary, this are the steps to do so:
+* install python3 and pip3
+* properly configure the `gcloud` command to execute the python script using a defined GCP project.
+* copy the contents of the [functions](/tf/functions) folder to a new location `mkdir -p tests && cp tf/functions tests`, then move to that folder `cd tests`
+* install requirements with `pip3 install -r requirements.txt`
+* create a file `request.json` with the request to be processed (review previous sections)
+* modify script's constants in the file with meaningful values
+* run the script with `python 3 main.py request.json`, the script will print out the request and the operation identifiers
+
+__Note:__ the standalone script does not execute the future operation result callback, check on the workflow section of GCP console to review results.

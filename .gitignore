@@ -1,6 +1,6 @@
 tf/.terraform
 tf/*.tfstate
 **/.DS_Store
-tf/files/*.zip
+tf/files/*
 tf/*terraform.tfstate*
 tf/terraform.tfvars
