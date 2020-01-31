@@ -2,6 +2,8 @@
 
 This repository holds the Terraform scripts and Cloud Function scripts needed to build a system that capture job execution requests and trigger those executions asynchronously as Dataproc jobs.
 
+<img src="images/dataproc-inline-workflow-trigger.png" width="600">
+
 The GCP building blocks are based on this services:
  * __PubSub topics and subscriptions__ - Creates the request and response channels, in use by the clients to send executions and to follow up on the results
  * __Cloud Functions__                 - Implements the logic that capture the requests, coming as Pubsub messages, extract the job's information and, based on preset configurations, creates a Dataproc Inline Worflow instance that will create the needed cluster, execute the job or list of jobs and takes care of the deletion of the used resources after completion (being that failed or successful).
