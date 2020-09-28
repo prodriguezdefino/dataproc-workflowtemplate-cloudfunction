@@ -10,13 +10,15 @@
  */
 
 resource "google_pubsub_topic" "dataproc_workflow_cf_trigger" {
-  name   = "dataproc-workflow-cf-trigger"
-  labels = local.labels
+  name       = "dataproc-workflow-cf-trigger"
+  labels     = local.labels
+  depends_on = [google_project_service.pubsub_service]
 }
 
 resource "google_pubsub_topic" "dataproc_workflow_cf_results" {
-  name   = "dataproc-workflow-cf-results"
-  labels = local.labels
+  name       = "dataproc-workflow-cf-results"
+  labels     = local.labels
+  depends_on = [google_project_service.pubsub_service]
 }
 
 resource "google_pubsub_subscription" "results_subscription" {

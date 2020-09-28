@@ -12,10 +12,13 @@
 resource "google_service_account" "sa_cf_executor" {
   account_id   = "sa-cf-executor"
   display_name = "Dataproc Worflow CF Executor"
+  depends_on   = [google_project_service.iam_service]
 }
+
 resource "google_service_account" "sa_dataproc_worker" {
-  account_id   = "sa-dataproc-worker"
+  account_id   = "sa-cf-dataproc-worker"
   display_name = "Dataproc Worker"
+  depends_on   = [google_project_service.iam_service]
 }
 
 resource "google_project_iam_custom_role" "role_cf_executor" {
@@ -44,16 +47,19 @@ resource "google_project_iam_custom_role" "role_cf_executor" {
     "storage.objects.delete",
     "pubsub.topics.publish"
   ]
+  depends_on = [google_project_service.iam_service]
 }
 
 resource "google_project_iam_member" "cf_executor" {
-  project = var.project
-  role    = "projects/${var.project}/roles/${google_project_iam_custom_role.role_cf_executor.role_id}"
-  member  = "serviceAccount:${google_service_account.sa_cf_executor.email}"
+  project    = var.project
+  role       = "projects/${var.project}/roles/${google_project_iam_custom_role.role_cf_executor.role_id}"
+  member     = "serviceAccount:${google_service_account.sa_cf_executor.email}"
+  depends_on = [google_project_service.iam_service]
 }
 
 resource "google_project_iam_member" "dataproc_worker" {
-  project = var.project
-  role    = "roles/dataproc.worker"
-  member  = "serviceAccount:${google_service_account.sa_dataproc_worker.email}"
+  project    = var.project
+  role       = "roles/dataproc.worker"
+  member     = "serviceAccount:${google_service_account.sa_dataproc_worker.email}"
+  depends_on = [google_project_service.iam_service]
 }

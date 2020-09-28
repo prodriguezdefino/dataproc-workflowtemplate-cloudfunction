@@ -42,6 +42,7 @@ resource "google_cloudfunctions_function_iam_member" "invoker" {
   region         = var.region
   cloud_function = google_cloudfunctions_function.function_trigger_dataproc_workflow.name
 
-  role   = "roles/cloudfunctions.invoker"
-  member = "user:prodriguezdefino@gmail.com"
+  role       = "roles/cloudfunctions.invoker"
+  member     = "user:${var.user_email_manual_cf_exec}"
+  depends_on = [google_project_service.iam_service]
 }

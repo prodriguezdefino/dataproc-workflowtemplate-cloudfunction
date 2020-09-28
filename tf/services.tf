@@ -9,6 +9,20 @@
  * governed by the terms of that agreement, and the foregoing does not supersede that agreement.
  */
 
+resource "google_project_service" "pubsub_service" {
+  project = var.project
+  service = "pubsub.googleapis.com"
+
+  disable_dependent_services = true
+}
+
+resource "google_project_service" "iam_service" {
+  project = var.project
+  service = "iam.googleapis.com"
+
+  disable_dependent_services = true
+}
+
 resource "google_project_service" "cfunctions_service" {
   project = var.project
   service = "cloudfunctions.googleapis.com"

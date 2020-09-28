@@ -40,3 +40,7 @@ variable "history_server_available" {
   type    = bool
   default = true
 }
+
+variable "user_email_manual_cf_exec" {
+  type = string
+}
